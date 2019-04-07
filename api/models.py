@@ -8,4 +8,5 @@ class SpaceSignal(models.Model):
     publish_date = models.DateTimeField(default=timezone.now())
     author = models.CharField(max_length=50)
     content = models.TextField(max_length=140) # TODO: force min length 50 characters.
+    objects = models.Manager()
 
