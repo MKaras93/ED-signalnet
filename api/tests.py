@@ -1,13 +1,17 @@
 from django.test import TestCase
+from django.urls import reverse
 from .models import SpaceSignal
 from rest_framework.test import APITestCase
 from django.utils import timezone
+from rest_framework import status
 
 
 class SpaceSignalModelTest(TestCase):
     def setUp(self):
-        SpaceSignal.objects.create(publish_date=timezone.datetime(2019, 1, 1), system='Sol', content='Hello Worlds!', author='God')
-        SpaceSignal.objects.create(publish_date=timezone.datetime(2019, 1, 2), system='Sol', content='Hello again Worlds!', author='God')
+        SpaceSignal.objects.create(publish_date=timezone.datetime(2019, 1, 1), system='Sol', content='Hello Worlds!',
+                                   author='God')
+        SpaceSignal.objects.create(publish_date=timezone.datetime(2019, 1, 2), system='Sol',
+                                   content='Hello again Worlds!', author='God')
 
     def test_signals_created(self):
         self.assertEqual(SpaceSignal.objects.all().count(), 2)
@@ -30,4 +34,38 @@ class SpaceSignalModelTest(TestCase):
 
 
 class APITest(APITestCase):
-    pass
+    def test_post_request_correct(self):
+        url = reverse('signals')
+        data = {'author': 'Darth Vader',
+                'system': 'Alpha Centauri',
+                'content': 'I see through the lies of the Jedi.'
+                }
+        response = self.client.post(path=url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(SpaceSignal.objects.get())
+
+        data = {'author': 'Darth Vader',
+                'system': 'Alpha Centauri',
+                'content': 'I see through the lies of the Jedi.',
+                'publish_date': timezone.now()
+                }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(SpaceSignal.objects.all().count(), 2)
+
+    def test_post_request_incorrect(self):
+        url = reverse('signals')
+        data = {'system': 'Alpha Centauri',
+                'content': 'I see through the lies of the Jedi.'
+                }
+        response = self.client.post(path=url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        data = {'author': 'Darth Vader',
+                'anotherfield': 'Alpha Centauri',
+                'content': 'I see through the lies of the Jedi.',
+                'publish_date': timezone.now()
+                }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(SpaceSignal.objects.all().count(), 0)
